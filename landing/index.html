@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Tuesday Saloon</title>
+  <link rel="stylesheet" href="assets/entrance.css">
+</head>
+
+<body>
+  <main class="entrance" aria-label="The Tuesday Saloon entrance">
+    <section class="stage">
+      <div class="vignette" aria-hidden="true"></div>
+
+      <!-- SIGN WRAP -->
+      <div
+        id="signWrap"
+        class="sign-wrap"
+        role="group"
+        aria-label="The Tuesday Saloon sign. Hover or long-press to reveal a hidden moment."
+      >
+        <!-- base photo -->
+        <img
+          class="sign-photo"
+          src="assets/sign.jpg"
+          alt="Wooden sign: THE TUESDAY SALOON. To the nights we'll never remember and the friends we'll never forget."
+          draggable="false"
+        />
+
+        <!-- neon overlay -->
+        <img
+          id="neonOverlay"
+          class="neon-overlay"
+          src="assets/neon.svg"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+        />
+
+        <!-- subtle dust motes layer -->
+        <div class="dust" aria-hidden="true"></div>
+
+        <!-- lore prompt -->
+        <div id="loreHint" class="lore-hint" aria-hidden="true">
+          linger…
+        </div>
+
+        <!-- split glows -->
+        <button
+          id="musicHotspot"
+          class="hotspot hotspot--left"
+          type="button"
+          aria-label="Enter the Music room"
+          hidden
+        ></button>
+
+        <button
+          id="whiskeyHotspot"
+          class="hotspot hotspot--right"
+          type="button"
+          aria-label="Enter the Whiskey room"
+          hidden
+        ></button>
+
+        <div id="labels" class="path-labels" aria-hidden="true" hidden>
+          <div class="label label--left">MUSIC</div>
+          <div class="label label--right">WHISKEY</div>
+        </div>
+      </div>
+
+      <!-- fallback buttons -->
+      <div class="fallback-ctas">
+        <a class="cta" href="/music">Enter Music</a>
+        <a class="cta" href="/whiskey">Enter Whiskey</a>
+      </div>
+
+      <!-- audio (optional - you can add files later) -->
+      <audio id="ambience" preload="auto" loop>
+        <source src="assets/ambience.mp3" type="audio/mpeg">
+      </audio>
+      <audio id="vinyl" preload="auto">
+        <source src="assets/vinyl_crackle.mp3" type="audio/mpeg">
+      </audio>
+      <audio id="ice" preload="auto">
+        <source src="assets/ice_clink.mp3" type="audio/mpeg">
+      </audio>
+
+      <div id="srStatus" class="sr-only" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="assets/entrance.js"></script>
+</body>
+</html>
