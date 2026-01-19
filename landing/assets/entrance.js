@@ -1,47 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const turntable = document.querySelector(".hotspot-turntable");
-  const whiskey = document.querySelector(".hotspot-whiskey");
-
-  const setHot = (el, isHot) => {
-    if (!el) return;
-    el.classList.toggle("is-hot", isHot);
-  };
-
-  // Desktop hover: handled by CSS, but we keep focus/keyboard friendly
-  [turntable, whiskey].forEach((el) => {
-    if (!el) return;
-    el.addEventListener("focus", () => setHot(el, true));
-    el.addEventListener("blur", () => setHot(el, false));
-  });
-
-  // Mobile long-press: touchstart -> highlight, touchend/cancel -> unhighlight
-  const bindLongPress = (el) => {
-    if (!el) return;
-
-    let pressTimer = null;
-
-    el.addEventListener("touchstart", () => {
-      pressTimer = window.setTimeout(() => setHot(el, true), 200);
-    }, { passive: true });
-
-    const clear = () => {
-      if (pressTimer) window.clearTimeout(pressTimer);
-      pressTimer = null;
-      setHot(el, false);
-    };
-
-    el.addEventListener("touchend", clear);
-    el.addEventListener("touchcancel", clear);
-  };
-
-  bindLongPress(turntable);
-  bindLongPress(whiskey);
-
-  // Click routes (works for desktop + tap)
-  if (turntable) turntable.addEventListener("click", () => (window.location.href = "/music"));
-  if (whiskey) whiskey.addEventListener("click", () => (window.location.href = "/whiskey"));
-});
-document.addEventListener("DOMContentLoaded", () => {
   // -------------------------
   // Hotspots
   // -------------------------
@@ -63,9 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!el) return;
     let pressTimer = null;
 
-    el.addEventListener("touchstart", () => {
-      pressTimer = window.setTimeout(() => setHot(el, true), 200);
-    }, { passive: true });
+    el.addEventListener(
+      "touchstart",
+      () => {
+        pressTimer = window.setTimeout(() => setHot(el, true), 200);
+      },
+      { passive: true }
+    );
 
     const clear = () => {
       if (pressTimer) window.clearTimeout(pressTimer);
@@ -80,27 +41,53 @@ document.addEventListener("DOMContentLoaded", () => {
   bindLongPress(turntable);
   bindLongPress(whiskey);
 
+  // NOTE: keep as-is for now; these will 404 until you add routes/pages
   if (turntable) turntable.addEventListener("click", () => (window.location.href = "/music"));
   if (whiskey) whiskey.addEventListener("click", () => (window.location.href = "/whiskey"));
 
   // -------------------------
-  // Ambient audio
+  // Spotlight follow (desktop)
   // -------------------------
-  const audio = new Audio("./assets/ambient.mp3");
-  audio.loop = true;
-  audio.volume = 0.18;
+  const hero = document.querySelector(".hero");
+  const spotlight = document.querySelector(".spotlight");
 
+  if (hero && spotlight) {
+    hero.addEventListener("mousemove", (e) => {
+      const rect = hero.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      spotlight.style.setProperty("--sx", `${x}%`);
+      spotlight.style.setProperty("--sy", `${y}%`);
+    });
+  }
+
+  // -------------------------
+  // Ambient audio (autoplay-safe + failure-safe)
+  // -------------------------
   const toggle = document.querySelector(".audio-toggle");
+  if (!toggle) return; // if the button isn't in the HTML, don't crash
+
+  let audio = null;
+  try {
+    audio = new Audio("assets/ambient.mp3"); // relative path, no leading slash
+    audio.loop = true;
+    audio.volume = 0.18;
+  } catch (e) {
+    console.warn("Audio init failed:", e);
+  }
+
   let enabled = localStorage.getItem("saloon-audio") === "on";
 
   const updateIcon = () => {
     toggle.textContent = enabled ? "🔊" : "🔈";
   };
 
-  const startAudio = () => {
-    if (enabled && audio.paused) {
-      audio.play().catch(() => {});
-    }
+  const tryPlay = () => {
+    if (!audio) return;
+    audio.play().catch(() => {
+      // autoplay blocked or file can't be streamed (e.g., 416)
+      // do nothing; user can try again after interaction
+    });
   };
 
   updateIcon();
@@ -111,21 +98,23 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("saloon-audio", enabled ? "on" : "off");
 
     if (enabled) {
-      audio.play().catch(() => {});
-    } else {
+      tryPlay();
+    } else if (audio) {
       audio.pause();
     }
 
     updateIcon();
   });
 
-  // Start audio on first interaction (mobile-safe)
+  // Start audio on first interaction (mobile + autoplay rules)
   const unlock = () => {
-    startAudio();
+    if (enabled) tryPlay();
     document.removeEventListener("click", unlock);
     document.removeEventListener("touchstart", unlock);
+    document.removeEventListener("keydown", unlock);
   };
 
   document.addEventListener("click", unlock);
-  document.addEventListener("touchstart", unlock);
+  document.addEventListener("touchstart", unlock, { passive: true });
+  document.addEventListener("keydown", unlock);
 });

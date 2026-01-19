@@ -346,3 +346,7 @@ body{
 .audio-toggle:hover{
   box-shadow: 0 0 18px rgba(255, 140, 50, 0.35);
 }
+/* Mobile: allow spotlight when JS sets vars and user is interacting */
+@media (hover: none) {
+  .spotlight { opacity: 0.55; }
+}
