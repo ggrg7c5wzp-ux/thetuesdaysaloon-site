@@ -46,19 +46,49 @@ document.addEventListener("DOMContentLoaded", () => {
   if (whiskey) whiskey.addEventListener("click", () => (window.location.href = "/whiskey"));
 
   // -------------------------
-  // Spotlight follow (desktop)
+  // Spotlight follow (mouse + touch)
   // -------------------------
-  const hero = document.querySelector(".hero");
-  const spotlight = document.querySelector(".spotlight");
+const hero = document.querySelector(".hero");
+const spotlight = document.querySelector(".spotlight");
 
-  if (hero && spotlight) {
-    hero.addEventListener("mousemove", (e) => {
+if (hero && spotlight) {
+  hero.classList.add("js-active");
+    const updateSpotlight = (clientX, clientY) => {
       const rect = hero.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      const x = ((clientX - rect.left) / rect.width) * 100;
+      const y = ((clientY - rect.top) / rect.height) * 100;
       spotlight.style.setProperty("--sx", `${x}%`);
       spotlight.style.setProperty("--sy", `${y}%`);
-    });
+      spotlight.style.opacity = "0.55"; // helps if CSS relies on :hover
+    };
+
+    hero.addEventListener("mousemove", (e) => updateSpotlight(e.clientX, e.clientY));
+
+    hero.addEventListener(
+      "pointermove",
+      (e) => updateSpotlight(e.clientX, e.clientY),
+      { passive: true }
+    );
+
+    hero.addEventListener(
+      "pointerdown",
+      (e) => updateSpotlight(e.clientX, e.clientY),
+      { passive: true }
+    );
+  }
+
+  // -------------------------
+  // Subtle flicker (safe)
+  // -------------------------
+  // Your HTML uses .flicker-overlay (not .flicker)
+  const flicker = document.querySelector(".flicker-overlay");
+  if (flicker) {
+    setInterval(() => {
+      if (Math.random() < 0.10) {
+        flicker.classList.add("is-flickering");
+        setTimeout(() => flicker.classList.remove("is-flickering"), 120);
+      }
+    }, 600);
   }
 
   // -------------------------
@@ -84,10 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const tryPlay = () => {
     if (!audio) return;
-    audio.play().catch(() => {
-      // autoplay blocked or file can't be streamed (e.g., 416)
-      // do nothing; user can try again after interaction
-    });
+    audio.play().catch(() => {});
   };
 
   updateIcon();
@@ -97,11 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
     enabled = !enabled;
     localStorage.setItem("saloon-audio", enabled ? "on" : "off");
 
-    if (enabled) {
-      tryPlay();
-    } else if (audio) {
-      audio.pause();
-    }
+    if (enabled) tryPlay();
+    else if (audio) audio.pause();
 
     updateIcon();
   });
