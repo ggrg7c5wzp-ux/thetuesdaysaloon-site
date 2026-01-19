@@ -64,8 +64,56 @@ body{
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  opacity: 0;
+  animation: heroFade 700ms ease forwards;
+}
+@keyframes heroFade{
+  to { opacity: 1; }
 }
 
+/* Warm flicker overlay (guaranteed visible, no blend-mode reliance) */
+.flicker-overlay{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+
+  /* warm wash + slight dark vignette */
+  background:
+    radial-gradient(55% 45% at 72% 34%, rgba(255, 175, 85, 0.20), rgba(0,0,0,0) 62%),
+    radial-gradient(62% 50% at 26% 58%, rgba(255, 120, 55, 0.14), rgba(0,0,0,0) 68%),
+    radial-gradient(120% 100% at 50% 50%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.40) 100%);
+
+  opacity: 0.55;
+  animation: flicker 2.8s infinite ease-in-out;
+}
+
+@keyframes flicker{
+  0%   { opacity: 0.45; filter: brightness(1.00); }
+  18%  { opacity: 0.62; filter: brightness(1.04); }
+  36%  { opacity: 0.48; filter: brightness(1.01); }
+  58%  { opacity: 0.70; filter: brightness(1.05); }
+  76%  { opacity: 0.50; filter: brightness(1.02); }
+  100% { opacity: 0.58; filter: brightness(1.03); }
+}
+
+
+/* Cursor spotlight */
+.spotlight{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  background: radial-gradient(220px 220px at var(--sx, 50%) var(--sy, 50%),
+    rgba(255, 170, 90, 0.18),
+    rgba(0,0,0,0) 70%);
+}
+
+.hero:hover .spotlight{
+  opacity: 1;
+}
 /* The tavern image */
 .hero-bg{
   position: absolute;
@@ -142,12 +190,6 @@ body{
   border-radius: 18px;
 }
 
-/* Labels only appear when a hotspot is hot */
-.hotspot-label{
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-
 .hotspot.is-hot + .hotspot-label{
   opacity: 1;
 }
@@ -194,12 +236,8 @@ body{
   transition: opacity 160ms ease;
 }
 
-.hero:hover .hotspot-label{
-  opacity: 1;
-}
 
-.label-turntable{ left: 6%; top: 58%; }
-.label-whiskey{ left: 54%; top: 56%; }
+
 
 .path-labels{
   position:absolute;
