@@ -107,13 +107,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const isNarrow = window.matchMedia("(max-width: 768px)").matches;
     const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-    const PAN_MAX_X = isPortrait ? 40 : 18;
-    const PAN_MAX_Y = 8;
+    // Pan limits (cinematic, not frantic)
+    let PAN_MAX_X = isPortrait ? 40 : 18;
+    let PAN_MAX_Y = 8;
 
-    // Base framing: bias toward the left so the turntable is visible by default
-    // Positive panX shifts the background layer RIGHT, revealing more LEFT content.
-    let panX = isPortrait ? 70 : 25;
-    let panY = 0;
+
+    // Base framing (single source of truth)
+    const BASE_PAN_X = isPortrait ? 26 : 12;
+    const BASE_PAN_Y = 0;
+
+    let panX = BASE_PAN_X;
+    let panY = BASE_PAN_Y;
 
     let dragging = false;
     let startX = 0;
@@ -141,8 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const driftX = clamp(dx * -PAN_MAX_X * 0.35, -PAN_MAX_X, PAN_MAX_X);
       const driftY = clamp(dy * -PAN_MAX_Y * 0.45, -PAN_MAX_Y, PAN_MAX_Y);
 
-      const baseX = isPortrait ? 45 : 20;
-      panX = clamp(baseX + driftX, -PAN_MAX_X, PAN_MAX_X);
+      panX = clamp(BASE_PAN_X + driftX, -PAN_MAX_X, PAN_MAX_X);
       panY = clamp(driftY, -PAN_MAX_Y, PAN_MAX_Y);
       applyPan();
     };
@@ -194,15 +197,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Re-init on rotation/resize (keeps portrait behavior correct)
     window.addEventListener(
-      "resize",
-      () => {
-        const portraitNow = window.matchMedia("(orientation: portrait)").matches;
-        panX = portraitNow ? 70 : 25;
-        panY = 0;
-        applyPan();
-      },
-      { passive: true }
-    );
+  "resize",
+  () => {
+    const portraitNow = window.matchMedia("(orientation: portrait)").matches;
+
+    // Recompute limits + base on orientation change
+    const nextPAN_MAX_X = portraitNow ? 40 : 18;
+    const nextPAN_MAX_Y = 8;
+
+    const nextBASE_X = portraitNow ? 26 : 12;
+    const nextBASE_Y = 0;
+
+    // Update vars by mutating current values in-place
+    panX = nextBASE_X;
+    panY = nextBASE_Y;
+
+    applyPan();
+  },
+  { passive: true }
+);
   }
 
   // -------------------------

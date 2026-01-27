@@ -219,13 +219,11 @@ body{
    MOBILE PORTRAIT FIXES
    ========================= */
 @media (max-width: 768px){
-  /* Bias the crop so the turntable side is actually visible in portrait */
   .hero-bg{
-    background-position: 18% center;  /* tweak 10–30% if needed */
-    transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.02);
+    background-position: 18% center; /* tweak 10–30% if needed */
+    transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0);
   }
 
-  /* Tighter, portrait-specific hotspots */
   .hotspot-turntable{
     left: 3%;
     top: 64%;
