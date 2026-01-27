@@ -81,9 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Click routes (Option A)
   // -------------------------
   if (turntable) {
-    turntable.addEventListener("click", () => {
-      go("https://media-management-system.onrender.com/catalog/");
-    });
+    turntable.addEventListener("click", () => {go("https://media-management-system.onrender.com/catalog/");});
   }
 
   if (whiskey) {
