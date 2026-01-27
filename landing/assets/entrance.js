@@ -107,8 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const isNarrow = window.matchMedia("(max-width: 768px)").matches;
     const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-    const PAN_MAX_X = isPortrait ? 110 : 80;
-    const PAN_MAX_Y = 40;
+    const PAN_MAX_X = isPortrait ? 70 : 25;
+    const PAN_MAX_Y = 15;
 
     // Base framing: bias toward the left so the turntable is visible by default
     // Positive panX shifts the background layer RIGHT, revealing more LEFT content.
