@@ -1,85 +1,128 @@
 document.addEventListener("DOMContentLoaded", () => {
   // -------------------------
-  // Hotspots
+  // Elements
   // -------------------------
+  const hero = document.querySelector(".hero");
+  const bg = document.querySelector(".hero-bg");
+  const spotlight = document.querySelector(".spotlight");
+
   const turntable = document.querySelector(".hotspot-turntable");
   const whiskey = document.querySelector(".hotspot-whiskey");
+
+  // -------------------------
+  // Helpers
+  // -------------------------
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
   const setHot = (el, isHot) => {
     if (!el) return;
     el.classList.toggle("is-hot", isHot);
   };
 
+  // -------------------------
+  // Hotspot UX: hover/focus + long-press glow (mobile)
+  // -------------------------
   [turntable, whiskey].forEach((el) => {
     if (!el) return;
+
     el.addEventListener("focus", () => setHot(el, true));
     el.addEventListener("blur", () => setHot(el, false));
-  });
+    el.addEventListener("mouseenter", () => setHot(el, true));
+    el.addEventListener("mouseleave", () => setHot(el, false));
 
-  const bindLongPress = (el) => {
-    if (!el) return;
+    // Long press (pointer-based, works on mobile + pen)
     let pressTimer = null;
+    let pressed = false;
+
+    const clearPress = () => {
+      if (pressTimer) window.clearTimeout(pressTimer);
+      pressTimer = null;
+      pressed = false;
+      setHot(el, false);
+    };
 
     el.addEventListener(
-      "touchstart",
-      () => {
-        pressTimer = window.setTimeout(() => setHot(el, true), 200);
+      "pointerdown",
+      (e) => {
+        // Only primary button for mouse
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        pressed = true;
+        pressTimer = window.setTimeout(() => {
+          if (pressed) setHot(el, true);
+        }, 220);
       },
       { passive: true }
     );
 
-    const clear = () => {
-      if (pressTimer) window.clearTimeout(pressTimer);
-      pressTimer = null;
-      setHot(el, false);
-    };
+    el.addEventListener("pointerup", clearPress, { passive: true });
+    el.addEventListener("pointercancel", clearPress, { passive: true });
+    el.addEventListener("pointerleave", clearPress, { passive: true });
+    el.addEventListener("pointermove", () => {
+      // If user starts moving finger significantly, don't treat it as long-press
+      // (prevents conflict with drag-to-pan on the hero background)
+      // Keep it light: any move cancels long press
+      if (pressTimer) {
+        window.clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    }, { passive: true });
+  });
 
-    el.addEventListener("touchend", clear);
-    el.addEventListener("touchcancel", clear);
+  // Click routes (you can change later)
+  if (turntable) {
+    turntable.addEventListener("click", () => {
+      window.location.href = "https://media-management-system.onrender.com/catalog/";
+    });
+  }
+  if (whiskey) {
+    whiskey.addEventListener("click", () => {
+      window.location.href = "/whiskey";
+    });
+  }
+
+  // -------------------------
+  // Spotlight follow
+  // -------------------------
+  const updateSpotlight = (clientX, clientY) => {
+    if (!hero || !spotlight) return;
+    const rect = hero.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    spotlight.style.setProperty("--sx", `${x}%`);
+    spotlight.style.setProperty("--sy", `${y}%`);
   };
 
-  bindLongPress(turntable);
-  bindLongPress(whiskey);
+  if (hero && spotlight) {
+    hero.addEventListener("mousemove", (e) => updateSpotlight(e.clientX, e.clientY));
+    hero.addEventListener(
+      "pointermove",
+      (e) => updateSpotlight(e.clientX, e.clientY),
+      { passive: true }
+    );
+    hero.addEventListener(
+      "pointerdown",
+      (e) => updateSpotlight(e.clientX, e.clientY),
+      { passive: true }
+    );
+  }
 
-  // NOTE: keep as-is for now; these will 404 until you add routes/pages
-  if (turntable) turntable.addEventListener("click", () => (window.location.href = "https://media-management-system.onrender.com/catalog/"));
-  if (whiskey) whiskey.addEventListener("click", () => (window.location.href = "/whiskey"));
-
-  // -------------------------
-  // Spotlight follow (mouse + touch)
-  // -------------------------
-const hero = document.querySelector(".hero");
-const spotlight = document.querySelector(".spotlight");
-
-if (hero && spotlight) {
-  hero.classList.add("js-active");
-    const updateSpotlight = (clientX, clientY) => {
-      const rect = hero.getBoundingClientRect();
-      const x = ((clientX - rect.left) / rect.width) * 100;
-      const y = ((clientY - rect.top) / rect.height) * 100;
-      spotlight.style.setProperty("--sx", `${x}%`);
-      spotlight.style.setProperty("--sy", `${y}%`);
-      spotlight.style.opacity = "0.55"; // helps if CSS relies on :hover
-    };
   // -------------------------
   // Cinematic pan (desktop parallax + mobile drag)
   // -------------------------
-  const bg = document.querySelector(".hero-bg");
-
   if (hero && bg) {
-    // Clamp helper
-    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    // Tune pan based on orientation (portrait needs more X travel)
+    const isNarrow = window.matchMedia("(max-width: 768px)").matches;
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-    // These are the max pan offsets in pixels.
-    // Bigger = more ability to slide the scene in portrait.
-    const PAN_MAX_X = 90;
+    const PAN_MAX_X = isPortrait ? 140 : 90;
     const PAN_MAX_Y = 40;
 
-    // Current pan
-    let panX = 0;
+    // Base framing: bias toward the left so the turntable is visible by default
+    // Positive panX shifts the background layer RIGHT, revealing more LEFT content.
+    let panX = isPortrait ? 70 : 25;
     let panY = 0;
 
-    // Drag state
     let dragging = false;
     let startX = 0;
     let startY = 0;
@@ -91,30 +134,32 @@ if (hero && spotlight) {
       hero.style.setProperty("--pan-y", `${panY}px`);
     };
 
-    // Desktop parallax (mouse/pointer move)
+    // Desktop parallax: subtle camera drift
     const parallaxFromPointer = (clientX, clientY) => {
-      const rect = hero.getBoundingClientRect();
-      const nx = (clientX - rect.left) / rect.width;  // 0..1
-      const ny = (clientY - rect.top) / rect.height;  // 0..1
+      if (dragging) return;
 
-      // Convert to -1..1
-      const dx = (nx - 0.5) * 2;
+      const rect = hero.getBoundingClientRect();
+      const nx = (clientX - rect.left) / rect.width; // 0..1
+      const ny = (clientY - rect.top) / rect.height;
+
+      const dx = (nx - 0.5) * 2; // -1..1
       const dy = (ny - 0.5) * 2;
 
-      // Only apply if not dragging (mobile)
-      if (!dragging) {
-        panX = clamp(dx * -PAN_MAX_X, -PAN_MAX_X, PAN_MAX_X);
-        panY = clamp(dy * -PAN_MAX_Y, -PAN_MAX_Y, PAN_MAX_Y);
-        applyPan();
-      }
+      // We drift around the base framing rather than replacing it
+      const driftX = clamp(dx * -PAN_MAX_X * 0.35, -PAN_MAX_X, PAN_MAX_X);
+      const driftY = clamp(dy * -PAN_MAX_Y * 0.45, -PAN_MAX_Y, PAN_MAX_Y);
+
+      const baseX = isPortrait ? 70 : 25;
+      panX = clamp(baseX + driftX, -PAN_MAX_X, PAN_MAX_X);
+      panY = clamp(driftY, -PAN_MAX_Y, PAN_MAX_Y);
+      applyPan();
     };
 
     hero.addEventListener("mousemove", (e) => parallaxFromPointer(e.clientX, e.clientY));
     hero.addEventListener("pointermove", (e) => parallaxFromPointer(e.clientX, e.clientY), { passive: true });
 
-    // Mobile/Touch drag-to-pan
+    // Mobile/Touch drag-to-pan on the hero stage
     hero.addEventListener("pointerdown", (e) => {
-      // Ignore right click, etc.
       if (e.pointerType === "mouse" && e.button !== 0) return;
 
       dragging = true;
@@ -123,75 +168,60 @@ if (hero && spotlight) {
       startPanX = panX;
       startPanY = panY;
 
-      // Captures pointer so drag continues even if finger drifts
       hero.setPointerCapture?.(e.pointerId);
       bg.style.transition = "none";
     });
 
-    hero.addEventListener("pointerup", () => {
+    const endDrag = () => {
       dragging = false;
       bg.style.transition = "";
-    });
+    };
 
-    hero.addEventListener("pointercancel", () => {
-      dragging = false;
-      bg.style.transition = "";
-    });
-
-    hero.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-
-      // Drag direction feels natural if we invert X (like moving a camera window)
-      panX = clamp(startPanX + dx * 0.35, -PAN_MAX_X, PAN_MAX_X);
-      panY = clamp(startPanY + dy * 0.20, -PAN_MAX_Y, PAN_MAX_Y);
-      applyPan();
-    }, { passive: true });
-
-    // Initialize
-    applyPan();
-  }
-
-    hero.addEventListener("mousemove", (e) => updateSpotlight(e.clientX, e.clientY));
+    hero.addEventListener("pointerup", endDrag, { passive: true });
+    hero.addEventListener("pointercancel", endDrag, { passive: true });
 
     hero.addEventListener(
       "pointermove",
-      (e) => updateSpotlight(e.clientX, e.clientY),
+      (e) => {
+        if (!dragging) return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        // Dragging "camera window": moving finger right should reveal more right side
+        // We invert X for the natural feel.
+        panX = clamp(startPanX + dx * -0.45, -PAN_MAX_X, PAN_MAX_X);
+        panY = clamp(startPanY + dy * -0.15, -PAN_MAX_Y, PAN_MAX_Y);
+        applyPan();
+      },
       { passive: true }
     );
 
-    hero.addEventListener(
-      "pointerdown",
-      (e) => updateSpotlight(e.clientX, e.clientY),
+    // Initialize with base framing
+    applyPan();
+
+    // Re-init on rotation/resize (keeps portrait behavior correct)
+    window.addEventListener(
+      "resize",
+      () => {
+        const portraitNow = window.matchMedia("(orientation: portrait)").matches;
+        panX = portraitNow ? 70 : 25;
+        panY = 0;
+        applyPan();
+      },
       { passive: true }
     );
   }
 
   // -------------------------
-  // Subtle flicker (safe)
-  // -------------------------
-  // Your HTML uses .flicker-overlay (not .flicker)
-  const flicker = document.querySelector(".flicker-overlay");
-  if (flicker) {
-    setInterval(() => {
-      if (Math.random() < 0.10) {
-        flicker.classList.add("is-flickering");
-        setTimeout(() => flicker.classList.remove("is-flickering"), 120);
-      }
-    }, 600);
-  }
-
-  // -------------------------
-  // Ambient audio (autoplay-safe + failure-safe)
+  // Ambient audio (autoplay-safe)
   // -------------------------
   const toggle = document.querySelector(".audio-toggle");
-  if (!toggle) return; // if the button isn't in the HTML, don't crash
+  if (!toggle) return;
 
   let audio = null;
   try {
-    audio = new Audio("assets/ambient.mp3"); // relative path, no leading slash
+    audio = new Audio("assets/ambient.mp3");
     audio.loop = true;
     audio.volume = 0.18;
   } catch (e) {
@@ -222,7 +252,6 @@ if (hero && spotlight) {
     updateIcon();
   });
 
-  // Start audio on first interaction (mobile + autoplay rules)
   const unlock = () => {
     if (enabled) tryPlay();
     document.removeEventListener("click", unlock);
