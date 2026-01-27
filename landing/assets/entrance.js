@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindLongPress(whiskey);
 
   // NOTE: keep as-is for now; these will 404 until you add routes/pages
-  if (turntable) turntable.addEventListener("click", () => (window.location.href = "/catalog"));
+  if (turntable) turntable.addEventListener("click", () => (window.location.href = "https://media-management-system.onrender.com/catalog/"));
   if (whiskey) whiskey.addEventListener("click", () => (window.location.href = "/whiskey"));
 
   // -------------------------
