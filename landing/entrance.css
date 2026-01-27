@@ -43,7 +43,7 @@ body{
 /* Background image layer (CSS-based so you can swap to video/canvas later) */
 .hero-bg{
   position:absolute;
-  inset:0;
+  inset:-18%;
 
   background-image:url("./assets/tavern.png");
   background-size:cover;
@@ -53,7 +53,7 @@ body{
   filter:saturate(1.05) contrast(1.05);
 
   /* Dynamic pan system (driven by JS vars) */
-  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.08);
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.02);
   transition: transform 120ms ease-out;
   will-change: transform;
 
@@ -222,7 +222,7 @@ body{
   /* Bias the crop so the turntable side is actually visible in portrait */
   .hero-bg{
     background-position: 18% center;  /* tweak 10–30% if needed */
-    transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.14);
+    transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.02);
   }
 
   /* Tighter, portrait-specific hotspots */

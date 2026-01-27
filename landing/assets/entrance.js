@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const isNarrow = window.matchMedia("(max-width: 768px)").matches;
     const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-    const PAN_MAX_X = isPortrait ? 140 : 90;
+    const PAN_MAX_X = isPortrait ? 110 : 80;
     const PAN_MAX_Y = 40;
 
     // Base framing: bias toward the left so the turntable is visible by default
@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const driftX = clamp(dx * -PAN_MAX_X * 0.35, -PAN_MAX_X, PAN_MAX_X);
       const driftY = clamp(dy * -PAN_MAX_Y * 0.45, -PAN_MAX_Y, PAN_MAX_Y);
 
-      const baseX = isPortrait ? 70 : 25;
+      const baseX = isPortrait ? 45 : 20;
       panX = clamp(baseX + driftX, -PAN_MAX_X, PAN_MAX_X);
       panY = clamp(driftY, -PAN_MAX_Y, PAN_MAX_Y);
       applyPan();
