@@ -15,6 +15,7 @@ body{
   color:var(--fg);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
+html, body { max-width: 100%; overflow-x: hidden; }
 
 .entrance{
   min-height:100vh;
@@ -59,14 +60,26 @@ body{
   flex-direction: column;
 }
 
-.hero{
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
+.hero-bg{
+  position: absolute;
+  inset: 0;
+
+  /* keep image in CSS so we can swap to video/canvas later */
+  background-image: url("./assets/tavern.png");
+  background-size: cover;
+  background-position: center;
+
+  filter: saturate(1.05) contrast(1.05);
+
+  /* --- dynamic pan system --- */
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.08);
+  transition: transform 120ms ease-out;
+  will-change: transform;
+  
   opacity: 0;
-  animation: heroFade 700ms ease forwards;
+  animation: heroFade 1.6s ease-out forwards;
 }
+
 @keyframes heroFade{
   to { opacity: 1; }
 }

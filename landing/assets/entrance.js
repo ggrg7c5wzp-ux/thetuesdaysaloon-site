@@ -61,6 +61,98 @@ if (hero && spotlight) {
       spotlight.style.setProperty("--sy", `${y}%`);
       spotlight.style.opacity = "0.55"; // helps if CSS relies on :hover
     };
+  // -------------------------
+  // Cinematic pan (desktop parallax + mobile drag)
+  // -------------------------
+  const bg = document.querySelector(".hero-bg");
+
+  if (hero && bg) {
+    // Clamp helper
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+    // These are the max pan offsets in pixels.
+    // Bigger = more ability to slide the scene in portrait.
+    const PAN_MAX_X = 90;
+    const PAN_MAX_Y = 40;
+
+    // Current pan
+    let panX = 0;
+    let panY = 0;
+
+    // Drag state
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+
+    const applyPan = () => {
+      hero.style.setProperty("--pan-x", `${panX}px`);
+      hero.style.setProperty("--pan-y", `${panY}px`);
+    };
+
+    // Desktop parallax (mouse/pointer move)
+    const parallaxFromPointer = (clientX, clientY) => {
+      const rect = hero.getBoundingClientRect();
+      const nx = (clientX - rect.left) / rect.width;  // 0..1
+      const ny = (clientY - rect.top) / rect.height;  // 0..1
+
+      // Convert to -1..1
+      const dx = (nx - 0.5) * 2;
+      const dy = (ny - 0.5) * 2;
+
+      // Only apply if not dragging (mobile)
+      if (!dragging) {
+        panX = clamp(dx * -PAN_MAX_X, -PAN_MAX_X, PAN_MAX_X);
+        panY = clamp(dy * -PAN_MAX_Y, -PAN_MAX_Y, PAN_MAX_Y);
+        applyPan();
+      }
+    };
+
+    hero.addEventListener("mousemove", (e) => parallaxFromPointer(e.clientX, e.clientY));
+    hero.addEventListener("pointermove", (e) => parallaxFromPointer(e.clientX, e.clientY), { passive: true });
+
+    // Mobile/Touch drag-to-pan
+    hero.addEventListener("pointerdown", (e) => {
+      // Ignore right click, etc.
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startPanX = panX;
+      startPanY = panY;
+
+      // Captures pointer so drag continues even if finger drifts
+      hero.setPointerCapture?.(e.pointerId);
+      bg.style.transition = "none";
+    });
+
+    hero.addEventListener("pointerup", () => {
+      dragging = false;
+      bg.style.transition = "";
+    });
+
+    hero.addEventListener("pointercancel", () => {
+      dragging = false;
+      bg.style.transition = "";
+    });
+
+    hero.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      // Drag direction feels natural if we invert X (like moving a camera window)
+      panX = clamp(startPanX + dx * 0.35, -PAN_MAX_X, PAN_MAX_X);
+      panY = clamp(startPanY + dy * 0.20, -PAN_MAX_Y, PAN_MAX_Y);
+      applyPan();
+    }, { passive: true });
+
+    // Initialize
+    applyPan();
+  }
 
     hero.addEventListener("mousemove", (e) => updateSpotlight(e.clientX, e.clientY));
 
