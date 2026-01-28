@@ -43,17 +43,18 @@ body{
 /* Background image layer (CSS-based so you can swap to video/canvas later) */
 .hero-bg{
   position:absolute;
-  inset:-8%;
+  inset:-0%;
+  
 
   background-image:url("./assets/tavern.png");
   background-size:cover;
   background-repeat:no-repeat;
-  background-position:center;
+  background-position:50% 20%;
 
   filter:saturate(1.05) contrast(1.05);
 
   /* Dynamic pan system (driven by JS vars) */
-  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0);
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.03);
   transition: transform 120ms ease-out;
   will-change: transform;
 

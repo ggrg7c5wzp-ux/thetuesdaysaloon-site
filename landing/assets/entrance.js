@@ -92,12 +92,22 @@ document.addEventListener("DOMContentLoaded", () => {
       (e) => updateSpotlight(e.clientX, e.clientY),
       { passive: true }
     );
-    hero.addEventListener(
-      "pointerdown",
-      (e) => updateSpotlight(e.clientX, e.clientY),
-      { passive: true }
-    );
-  }
+    hero.addEventListener("pointerdown", (e) => {
+    // ✅ If the user pressed on a hotspot, let the hotspot click work
+    if (e.target.closest(".hotspot")) return;
+
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startPanX = panX;
+    startPanY = panY;
+
+    hero.setPointerCapture?.(e.pointerId);
+    bg.style.transition = "none";
+  });
+  };
 
   // -------------------------
   // Cinematic pan (desktop parallax + mobile drag)
@@ -113,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // Base framing (single source of truth)
-    const BASE_PAN_X = isPortrait ? 26 : 12;
+    const BASE_PAN_X = isPortrait ? 26 : 0;
     const BASE_PAN_Y = 0;
 
     let panX = BASE_PAN_X;
