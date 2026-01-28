@@ -12,7 +12,11 @@
 
 *{ box-sizing:border-box; }
 
-html,body{ height:100%; max-width:100%; overflow-x:hidden; }
+html,body{
+  height:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
 
 body{
   margin:0;
@@ -32,29 +36,32 @@ body{
    ========================= */
 .hero{
   position:relative;
-  min-height:100svh;
+  min-height:100vh;      /* fallback */
+  min-height:100svh;     /* modern */
   width:100%;
   overflow:hidden;
 
-  /* Critical: allow pointer-drag on mobile; prevent Safari “helpfully” taking over */
+  /* mobile safari: allow custom drag/pan */
   touch-action:none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Background image layer (CSS-based so you can swap to video/canvas later) */
+/* Background image layer */
 .hero-bg{
   position:absolute;
-  inset:-0%;
-  
+  inset:0; /* ✅ DO NOT use negative inset; it causes forced zoom/crop */
 
   background-image:url("./assets/tavern.png");
   background-size:cover;
   background-repeat:no-repeat;
-  background-position:50% 20%;
+
+  /* Slight upward bias so sign/top aren’t punished on common aspect ratios */
+  background-position: 50% 20%;
 
   filter:saturate(1.05) contrast(1.05);
 
-  /* Dynamic pan system (driven by JS vars) */
-  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(1.03);
+  /* JS-driven pan */
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0);
   transition: transform 120ms ease-out;
   will-change: transform;
 
@@ -62,7 +69,7 @@ body{
   opacity:0;
   animation: heroFade 1.6s ease-out forwards;
 
-  /* Important: do not steal touch events */
+  /* Important: background layer never steals interaction */
   pointer-events:none;
 }
 
@@ -95,7 +102,7 @@ body{
   100% { opacity:0.58; filter:brightness(1.03); }
 }
 
-/* Cursor spotlight (desktop); mobile gets a faint constant version */
+/* Cursor spotlight */
 .spotlight{
   position:absolute;
   inset:0;
@@ -111,9 +118,7 @@ body{
   );
 }
 
-.hero:hover .spotlight{
-  opacity:1;
-}
+.hero:hover .spotlight{ opacity:1; }
 
 @media (hover: none){
   .spotlight{ opacity:0.35; }
@@ -130,9 +135,7 @@ body{
   outline:none;
   z-index:4;
 
-  /* if you ever want to show a debug box, temporarily add:
-     background: rgba(255,0,0,.08);
-  */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* The “illumination” effect */
@@ -142,7 +145,6 @@ body{
   inset:-22px;
   border-radius:999px;
 
-  /* warm halo + subtle center pop */
   background:
     radial-gradient(circle at 50% 50%,
       rgba(255, 200, 140, 0.28) 0%,
@@ -156,12 +158,11 @@ body{
   transition:opacity 160ms ease, transform 160ms ease;
   pointer-events:none;
 
-  /* makes the glow feel like “light” not “overlay” */
+  /* blend-mode is pretty but can be quirky; keep it but don’t rely on it */
   mix-blend-mode: screen;
   filter: blur(0.2px);
 }
 
-/* show glow on hover/focus, and when JS adds .is-hot (mobile long-press) */
 .hotspot:hover::after,
 .hotspot:focus-visible::after,
 .hotspot.is-hot::after{
@@ -188,16 +189,14 @@ body{
   text-shadow: 0 2px 12px rgba(0,0,0,0.85);
 }
 
-/* label appears when hotspot is active */
+/* Requires label is immediately after button in DOM */
 .hotspot:hover + .hotspot-label,
 .hotspot:focus-visible + .hotspot-label,
 .hotspot.is-hot + .hotspot-label{
   opacity:1;
 }
 
-/* ===== Desktop hotspot placement (starting point) =====
-   (These are tightened: whiskey is “glass only”, not the whole hand)
-*/
+/* ===== Desktop hotspot placement ===== */
 .hotspot-turntable{
   left: 2%;
   top: 62%;
@@ -212,7 +211,6 @@ body{
   height: 16%;
 }
 
-/* Labels near hotspots */
 .label-turntable{ left: 6%; top: 58%; }
 .label-whiskey{ left: 49%; top: 67%; }
 
@@ -221,8 +219,8 @@ body{
    ========================= */
 @media (max-width: 768px){
   .hero-bg{
-    background-position: 18% center; /* tweak 10–30% if needed */
-    transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0);
+    /* mobile tends to crop right side; bias left a bit */
+    background-position: 18% 20%;
   }
 
   .hotspot-turntable{
@@ -303,4 +301,12 @@ body{
   clip:rect(0,0,0,0);
   white-space:nowrap;
   border:0;
+}
+
+/* Reduce motion for folks who request it */
+@media (prefers-reduced-motion: reduce){
+  .hero-bg{ animation:none; opacity:1; transition:none; }
+  .flicker-overlay{ animation:none; }
+  .spotlight{ transition:none; }
+  .hotspot::after{ transition:none; }
 }
