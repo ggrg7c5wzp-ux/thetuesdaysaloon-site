@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // -------------------------
   // Hotspot UX: hover/focus + long-press glow (mobile)
+  // Also: stopPropagation so hero drag doesn't steal clicks
   // -------------------------
   [turntable, whiskey].forEach((el) => {
     if (!el) return;
@@ -44,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
     el.addEventListener(
       "pointerdown",
       (e) => {
+        // ✅ prevent hero pointerdown from ever seeing this
+        e.stopPropagation();
+
         // Only primary button for mouse
         if (e.pointerType === "mouse" && e.button !== 0) return;
 
@@ -58,23 +62,37 @@ document.addEventListener("DOMContentLoaded", () => {
     el.addEventListener("pointerup", clearPress, { passive: true });
     el.addEventListener("pointercancel", clearPress, { passive: true });
     el.addEventListener("pointerleave", clearPress, { passive: true });
-    el.addEventListener("pointermove", () => {
-      // If user starts moving finger significantly, don't treat it as long-press
-      // (prevents conflict with drag-to-pan on the hero background)
-      // Keep it light: any move cancels long press
-      if (pressTimer) {
-        window.clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    }, { passive: true });
+
+    el.addEventListener(
+      "pointermove",
+      () => {
+        // If user starts moving finger, don't treat as long-press
+        if (pressTimer) {
+          window.clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      },
+      { passive: true }
+    );
   });
 
-  // Click routes (you can change later)
-  if (turntable) {turntable.addEventListener("click", () => {window.location.href = "https://media-management-system.onrender.com/catalog/";});}
-  if (whiskey) {whiskey.addEventListener("click", () => {window.location.href = "/whiskey";});}
+  // -------------------------
+  // Click routes
+  // -------------------------
+  if (turntable) {
+    turntable.addEventListener("click", () => {
+      window.location.href = "https://media-management-system.onrender.com/catalog/";
+    });
+  }
+
+  if (whiskey) {
+    whiskey.addEventListener("click", () => {
+      window.location.href = "/whiskey";
+    });
+  }
 
   // -------------------------
-  // Spotlight follow
+  // Spotlight follow (no dragging logic here)
   // -------------------------
   const updateSpotlight = (clientX, clientY) => {
     if (!hero || !spotlight) return;
@@ -87,44 +105,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (hero && spotlight) {
     hero.addEventListener("mousemove", (e) => updateSpotlight(e.clientX, e.clientY));
-    hero.addEventListener(
-      "pointermove",
-      (e) => updateSpotlight(e.clientX, e.clientY),
-      { passive: true }
-    );
-    hero.addEventListener("pointerdown", (e) => {
-    // ✅ If the user pressed on a hotspot, let the hotspot click work
-    if (e.target.closest(".hotspot")) return;
-
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-
-    dragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    startPanX = panX;
-    startPanY = panY;
-
-    hero.setPointerCapture?.(e.pointerId);
-    bg.style.transition = "none";
-  });
-  };
+    hero.addEventListener("pointermove", (e) => updateSpotlight(e.clientX, e.clientY), {
+      passive: true,
+    });
+  }
 
   // -------------------------
   // Cinematic pan (desktop parallax + mobile drag)
   // -------------------------
   if (hero && bg) {
-    // Tune pan based on orientation (portrait needs more X travel)
-    const isNarrow = window.matchMedia("(max-width: 768px)").matches;
     const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-    // Pan limits (cinematic, not frantic)
+    // Limits (mutate on resize)
     let PAN_MAX_X = isPortrait ? 40 : 18;
     let PAN_MAX_Y = 8;
 
-
     // Base framing (single source of truth)
-    const BASE_PAN_X = isPortrait ? 26 : 0;
-    const BASE_PAN_Y = 0;
+    let BASE_PAN_X = isPortrait ? 26 : 0;
+    let BASE_PAN_Y = 0;
 
     let panX = BASE_PAN_X;
     let panY = BASE_PAN_Y;
@@ -140,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hero.style.setProperty("--pan-y", `${panY}px`);
     };
 
-    // Desktop parallax: subtle camera drift
+    // Desktop parallax
     const parallaxFromPointer = (clientX, clientY) => {
       if (dragging) return;
 
@@ -151,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const dx = (nx - 0.5) * 2; // -1..1
       const dy = (ny - 0.5) * 2;
 
-      // We drift around the base framing rather than replacing it
       const driftX = clamp(dx * -PAN_MAX_X * 0.35, -PAN_MAX_X, PAN_MAX_X);
       const driftY = clamp(dy * -PAN_MAX_Y * 0.45, -PAN_MAX_Y, PAN_MAX_Y);
 
@@ -161,10 +158,16 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     hero.addEventListener("mousemove", (e) => parallaxFromPointer(e.clientX, e.clientY));
-    hero.addEventListener("pointermove", (e) => parallaxFromPointer(e.clientX, e.clientY), { passive: true });
+    hero.addEventListener(
+      "pointermove",
+      (e) => parallaxFromPointer(e.clientX, e.clientY),
+      { passive: true }
+    );
 
-    // Mobile/Touch drag-to-pan on the hero stage
     hero.addEventListener("pointerdown", (e) => {
+      // ✅ Never start drag if user pressed a hotspot
+      if (e.target.closest(".hotspot")) return;
+
       if (e.pointerType === "mouse" && e.button !== 0) return;
 
       dragging = true;
@@ -193,8 +196,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
 
-        // Dragging "camera window": moving finger right should reveal more right side
-        // We invert X for the natural feel.
         panX = clamp(startPanX + dx * -0.45, -PAN_MAX_X, PAN_MAX_X);
         panY = clamp(startPanY + dy * -0.15, -PAN_MAX_Y, PAN_MAX_Y);
         applyPan();
@@ -202,30 +203,27 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: true }
     );
 
-    // Initialize with base framing
+    // Initialize
     applyPan();
 
-    // Re-init on rotation/resize (keeps portrait behavior correct)
+    // Resize/orientation
     window.addEventListener(
-  "resize",
-  () => {
-    const portraitNow = window.matchMedia("(orientation: portrait)").matches;
+      "resize",
+      () => {
+        const portraitNow = window.matchMedia("(orientation: portrait)").matches;
 
-    // Recompute limits + base on orientation change
-    const nextPAN_MAX_X = portraitNow ? 40 : 18;
-    const nextPAN_MAX_Y = 8;
+        PAN_MAX_X = portraitNow ? 40 : 18;
+        PAN_MAX_Y = 8;
 
-    const nextBASE_X = portraitNow ? 26 : 12;
-    const nextBASE_Y = 0;
+        BASE_PAN_X = portraitNow ? 26 : 0;
+        BASE_PAN_Y = 0;
 
-    // Update vars by mutating current values in-place
-    panX = nextBASE_X;
-    panY = nextBASE_Y;
-
-    applyPan();
-  },
-  { passive: true }
-);
+        panX = BASE_PAN_X;
+        panY = BASE_PAN_Y;
+        applyPan();
+      },
+      { passive: true }
+    );
   }
 
   // -------------------------
